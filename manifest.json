@@ -1,0 +1,24 @@
+{
+  "name": {
+    "en": "DonationAlerts",
+    "ru": "DonationAlerts",
+    "uk": "DonationAlerts"
+  },
+  "description": {
+    "en": "DonationAlerts integration: OAuth login and real-time donation alerts via Centrifugo WebSocket.",
+    "ru": "Интеграция DonationAlerts: OAuth-авторизация и донаты в реальном времени через Centrifugo WebSocket.",
+    "uk": "Інтеграція DonationAlerts: OAuth-авторизація та донати в реальному часі через Centrifugo WebSocket."
+  },
+  "type": "platform.donation",
+  "version": "1.0.0",
+  "author": "RocketMan System",
+  "icon": "logo.png",
+  "permissions": [
+    "NETWORK_REQUEST",
+    "NETWORK_WEBSOCKET",
+    "WEB_END_POINTS",
+    "DASHBOARD_EVENTS",
+    "STATUS",
+    "NOTIFY"
+  ]
+}
