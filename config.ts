@@ -1,5 +1,10 @@
 import { DonationAlertsApi } from './api';
 import { buildAuthServerSelectOptions, DEFAULT_API_SERVER } from './constants';
+import {
+  buildLogoutLabel,
+  formatAccountLabel,
+  logoutFallback,
+} from './locale';
 import { mergeDonationAlertsParams } from './params';
 import {
   startDonationAlertsTracking,
@@ -12,6 +17,8 @@ const clearDonationAlertsAuth = () => {
     access_token: '',
     refresh_token: '',
     token_expires_at: 0,
+    user_name: '',
+    user_id: 0,
   }).then(() => {
     DonationAlertsApi.accessToken = null;
     DonationAlertsApi.refreshToken = null;
@@ -21,32 +28,40 @@ const clearDonationAlertsAuth = () => {
 };
 
 export const RegenerateConfig = () => {
-  api.config.getParams().then(params => {
+  api.config.getParams().then(async params => {
     const access_token = params.access_token || '';
     const refresh_token = params.refresh_token || '';
     const api_server = params.api_server || DEFAULT_API_SERVER;
     const token_expires_at =
       typeof params.token_expires_at === 'number' ? params.token_expires_at : 0;
+    let user_name =
+      typeof params.user_name === 'string' ? params.user_name : '';
+    let user_id = typeof params.user_id === 'number' ? params.user_id : 0;
 
     DonationAlertsApi.setApiServer(api_server);
     DonationAlertsApi.accessToken = access_token || null;
     DonationAlertsApi.refreshToken = refresh_token || null;
 
     if (DonationAlertsApi.accessToken) {
-      DonationAlertsApi.ensureAccessToken(token_expires_at).then(async ok => {
-        if (!ok) {
-          await clearDonationAlertsAuth();
-          return;
-        }
+      const ok = await DonationAlertsApi.ensureAccessToken(token_expires_at);
+      if (!ok) {
+        await clearDonationAlertsAuth();
+        return;
+      }
 
-        const user = await DonationAlertsApi.getUserOAuth(true);
-        if (!user) {
-          await clearDonationAlertsAuth();
-          return;
-        }
+      const user = await DonationAlertsApi.getUserOAuth(true);
+      if (!user) {
+        await clearDonationAlertsAuth();
+        return;
+      }
 
-        startDonationAlertsTracking(user);
-      });
+      if (user.name !== user_name || user.id !== user_id) {
+        user_name = user.name;
+        user_id = user.id;
+        await mergeDonationAlertsParams({ user_name, user_id });
+      }
+
+      void startDonationAlertsTracking(user);
     } else {
       stopDonationAlertsTracking();
     }
@@ -88,11 +103,14 @@ export const RegenerateConfig = () => {
     ];
 
     if (access_token) {
+      const account = formatAccountLabel(user_name, user_id);
       fields.push({
         type: 'button',
         key: 'logout',
         event: 'donationalertsLogout',
-        editor: { label: { en: 'Logout', ru: 'Выйти', uk: 'Вийти' } },
+        editor: {
+          label: account ? buildLogoutLabel(account) : logoutFallback,
+        },
       });
     } else {
       fields.push({
