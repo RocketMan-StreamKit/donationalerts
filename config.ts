@@ -1,10 +1,10 @@
 import { DonationAlertsApi } from './api';
-import { buildAuthServerSelectOptions, DEFAULT_API_SERVER } from './constants';
 import {
-  buildLogoutLabel,
-  formatAccountLabel,
-  logoutFallback,
-} from './locale';
+  buildAuthServerSelectOptions,
+  DEFAULT_API_SERVER,
+  resolveApiServerUrl,
+} from './constants';
+import { buildLogoutLabel, formatAccountLabel, logoutFallback } from './locale';
 import { mergeDonationAlertsParams } from './params';
 import {
   startDonationAlertsTracking,
@@ -31,7 +31,7 @@ export const RegenerateConfig = () => {
   api.config.getParams().then(async params => {
     const access_token = params.access_token || '';
     const refresh_token = params.refresh_token || '';
-    const api_server = params.api_server || DEFAULT_API_SERVER;
+    const api_server = resolveApiServerUrl(params.api_server);
     const token_expires_at =
       typeof params.token_expires_at === 'number' ? params.token_expires_at : 0;
     let user_name =
@@ -66,8 +66,10 @@ export const RegenerateConfig = () => {
       stopDonationAlertsTracking();
     }
 
-    const fields: Parameters<typeof GenerateConfig>[0] = [
-      {
+    const fields: Parameters<typeof GenerateConfig>[0] = [];
+
+    if (isDeveloperMode) {
+      fields.push({
         key: 'api_server',
         type: 'select',
         default: DEFAULT_API_SERVER,
@@ -84,7 +86,10 @@ export const RegenerateConfig = () => {
             uk: 'URL сервера авторизації (домен + порт)',
           },
         },
-      },
+      });
+    }
+
+    fields.push(
       {
         key: 'access_token',
         type: 'text',
@@ -99,8 +104,8 @@ export const RegenerateConfig = () => {
         key: 'token_expires_at',
         type: 'number',
         default: 0,
-      },
-    ];
+      }
+    );
 
     if (access_token) {
       const account = formatAccountLabel(user_name, user_id);
